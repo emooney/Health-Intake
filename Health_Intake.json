@@ -1,0 +1,333 @@
+{
+  "name": "Health Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.headers.query }}",
+        "options": {
+          "systemMessage": "=<AgentInstructions>\n    <Role>\n        <Name>HealthInfo Agent</Name>\n        <Description>Collects health information from the User and reports its status back to the User.</Description>\n    </Role>\n    <Goal>\n        <Primary>To accurately record health information and convey it back to the user in a concise manner.</Primary>\n    </Goal>\n    <Instructions>\n        <Instruction>You will determine what the User wants to record and then record it using the save_healthInfo tool.</Instruction>\n        <Instruction>When the user says they ate or drank something, that will get recorded as the 'Intake' value.</Instruction>\n        <Instruction>When the user says they ate or drank something, you will estimate how many calories they have eaten or drank and record as the 'Calories' value.</Instruction>\n        <Instruction>When the user says they exercised, that will get recorded as the 'Exercise' value.</Instruction>\n        <Instruction>When the user says they exercised, you will estimate how many calories they burned and record as the 'CaloriesBurned' value.</Instruction>\n        <Instruction>When the user says they are feeling a certain way, that will get recorded as the 'Mood' value.</Instruction>\n        <Instruction>When the user says they weigh something, that will get recorded as the 'Weight' value.</Instruction>\n        <Instruction>When using the save_healthInfo tool, don't insert an empty entry, the default value will be \" \". A space.</Instruction>\n        <Instruction>If all values are empty, don’t use save_healthInfo tool. We don’t want to write an empty row to the database.</Instruction>\n        <Instruction>When the user says 'Summarize my day', you will use read_healthInfo to retrieve data for that day and summarize the days information and report it back to the user.</Instruction>\n        <Instruction>When the user says 'Summarize my week', you will use read_healthInfo to retrieve data for that week and summarize the days information and report it back to the user.</Instruction>\n        <Instruction>When the user says 'Summarize my month', you will use read_healthInfo to retrieve data for that month and summarize the days information and report it back to the user.</Instruction>        \n        <Instruction>Your response will always be concise and accurate.</Instruction>\n    </Instructions>\n    <examples>\n        <example>\n            <input>I ate a turkey and cheese sandwich</input>\n            <output>Recorded turkey and cheese sandwich at 300 calories</output>\n        </example>\n        <example>\n            <input>I walked 2 miles today</input>\n            <output>Recorded you walked 2 miles and burned 500 calories</output>\n        </example>\n        <example>\n            <input>User: I walked 9699 steps today</input>\n            <output>Recorded 9699 steps and burned 500 calories</output>\n        </example>\n        <example>\n            <input>I ate a Big Mac</input>\n            <output>Recorded eating a Big Mac at 500 calories</output>\n        </example>\n        <example>\n            <input>I ate a piece of chocolate cake</input>\n            <output>Recorded ate a piece of chocolate cake</output>\n        </example>\n        <example>\n            <input>I ate a serving of string beans</input>\n            <output>Recorded ate a serving of string beans</output>\n        </example>\n        <example>\n            <input>\n                User: Summarize my day\n            </input>\n            <output>\n                Response: Combined Calorie intake is 1500 calories, combined Calorie burn is 500 calories. Looks like you're intaking more calories then you are outputting. You may want to consider improving your exercise plan. Your mood was very good and your weight didn't change from yesterday. \n            </output>\n        </example>\n        <example>\n            <input>\n                User: Summarize my week\n            </input>\n            <output>\n                Response: Over a week, you didn't eat very healthy, but it looked like you walked every day which is good! Your mood was good and your weight didn't change at all. \n            </output>\n        </example>\n        <example>\n            <input>\n                User: Summarize my month\n            </input>\n            <output>\n                Response: Over a month, you ate very healthy, but it looks like you didn't get much exercise. Your mood was very good and your weight didn't change at all.  \n            </output>\n        </example>        \n    </examples>\n</AgentInstructions>\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "5d3af3bc-db2e-4ac6-a34f-e54f1fa7aa95",
+      "name": "AI Agent",
+      "executeOnce": false,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        220
+      ],
+      "id": "1afcfce5-8444-4e01-a041-cdd4d19b0b4a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "DZaBabO9u605tAtZ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "health",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        860,
+        0
+      ],
+      "id": "bd49dce7-dc6b-46e2-82a3-d5013f5a0aad",
+      "name": "Webhook",
+      "webhookId": "f62bbe57-5bac-4ac3-a3cd-57ce4f6d7299"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        0
+      ],
+      "id": "63195597-9f8c-4c35-9bb6-4e4eee5397d6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appl53dkUI0MlnpNS",
+          "mode": "list",
+          "cachedResultName": "HealthInfo",
+          "cachedResultUrl": "https://airtable.com/appl53dkUI0MlnpNS"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblmto4sCKTGqr7lt",
+          "mode": "list",
+          "cachedResultName": "HealthInfo_new",
+          "cachedResultUrl": "https://airtable.com/appl53dkUI0MlnpNS/tblmto4sCKTGqr7lt"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Intake": "={{ $fromAI(\"Intake\") }}",
+            "Calories": "={{ $fromAI(\"Calories\") }}",
+            "Exercise": "={{ $fromAI(\"Exercise\") }}",
+            "CaloriesBurned": "={{ $fromAI(\"CaloriesBurned\") }}",
+            "Weight": "={{ $fromAI(\"Weight\") }}",
+            "Mood": "={{ $fromAI(\"Mood\") }}",
+            "Date": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Intake",
+              "displayName": "Intake",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Calories",
+              "displayName": "Calories",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Exercise",
+              "displayName": "Exercise",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CaloriesBurned",
+              "displayName": "CaloriesBurned",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Weight",
+              "displayName": "Weight",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mood",
+              "displayName": "Mood",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        220
+      ],
+      "id": "6c5a1632-8f53-4892-9b0d-e8f7b61bf348",
+      "name": "save_healthInfo",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "XsabY1nWgS80ug7D",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appl53dkUI0MlnpNS",
+          "mode": "list",
+          "cachedResultName": "HealthInfo",
+          "cachedResultUrl": "https://airtable.com/appl53dkUI0MlnpNS"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblmto4sCKTGqr7lt",
+          "mode": "list",
+          "cachedResultName": "HealthInfo_new",
+          "cachedResultUrl": "https://airtable.com/appl53dkUI0MlnpNS/tblmto4sCKTGqr7lt"
+        },
+        "options": {},
+        "sort": {
+          "property": [
+            {
+              "field": "Date"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        220
+      ],
+      "id": "928d5788-c82e-41ca-a9e9-f68f9eed942b",
+      "name": "read_healthInfo",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "XsabY1nWgS80ug7D",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Health Intake\n- Uses Siri as the input via a webhook.\n- Agent receives input and determines the calories via OpenAI model.\n- Utilizes Airtable to store data for retrieval.\n- User can use model to discuss data. ",
+        "width": 580
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "1a5a0482-f923-4ceb-b903-a15ed3d99921",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_healthInfo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read_healthInfo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "87d6191c-9da4-4d29-8b48-dd0d82d4749f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c1cc2e18d32a91e26eb78bbc6373615a06451476e56efe94394fc82c93d00305"
+  },
+  "id": "xhLmUqhBXucfNGyx",
+  "tags": []
+}
