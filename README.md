@@ -131,6 +131,6 @@ curl -X POST https://your-n8n-domain/webhook/health \
 
 ## 📘 Credits
 
-Developed using **n8n**, **OpenAI**, and **Airtable** by Nskha.
+Developed using **n8n**, **OpenAI**, and **Airtable**
 
 ---
