@@ -1,136 +1,83 @@
-# 🧠 Health Intake - AI Agent Workflow (n8n)
+# 🧠 Health Intake — AI-Powered Health Logging with Siri & Airtable
 
-This workflow is designed to collect, analyze, and respond to health-related data submitted via a webhook (e.g., through Siri or another voice assistant) using OpenAI's GPT model and store it in Airtable.
+This n8n workflow lets you track your nutrition, exercise, calories, weight, and mood via **Siri voice input**, processed by **OpenAI GPT-4o**, and stored in **Airtable**. It's designed for quick, natural health tracking with minimal user effort.
 
----
+## 🚀 Features
 
-## 📌 Workflow Overview
+- 🔊 Accepts voice-based health logs through Siri (via webhook). Set up a Shortcut on your iPhone
+- 🤖 Uses OpenAI (GPT-4o) to extract structured health data from free-form speech.
+- 📊 Stores structured entries (e.g., intake, calories, exercise, mood) in Airtable.
+- 🧠 Supports natural language queries about your past health records.
+- 📅 Logs are automatically timestamped and categorized.
 
-This n8n workflow automates the process of capturing health data (intake, calories, exercise, mood, weight) using natural language input. It performs the following steps:
+## 📌 Prerequisites
 
-1. **Receive Input**: Accepts POST requests through a webhook.
-2. **Interpret Input**: Sends the query to a custom AI Agent powered by OpenAI (gpt-4o-mini).
-3. **Store Data**: Saves structured health data into Airtable if applicable.
-4. **Read Data**: Fetches past records for summarization (daily, weekly, monthly).
-5. **Respond**: Returns AI-generated summary or acknowledgment back to the sender.
+- A running n8n instance (self-hosted or cloud).
+- Airtable account with:
+  - A base named `HealthInfo`
+  - A table (e.g., `HealthInfo_new`) with fields: `Date`, `Intake`, `Calories`, `Exercise`, `CaloriesBurned`, `Weight`, `Mood`
+- OpenAI API key with GPT-4o support.
+- Siri Shortcut to send POST requests to the n8n webhook.
 
----
+## 🧩 Nodes Overview
 
-## 🚀 Use Case Scenarios
+| Node Name          | Function                                                                 |
+|--------------------|--------------------------------------------------------------------------|
+| `Siri Request`     | Webhook to receive Siri POST requests                                    |
+| `Health Agent`     | LangChain agent using GPT-4o with system prompt for structured extraction|
+| `OpenAI Chat Model`| GPT-4o language model connected to agent                                 |
+| `read_healthInfo`  | Reads existing Airtable records                                          |
+| `save_healthInfo`  | Saves structured health data to Airtable                                |
+| `Respond to Siri`  | Sends back a voice-friendly text response                                |
+| `Sticky Note`      | Notes the workflow purpose                                               |
 
-- Log food intake and estimate calories.
-- Record exercise and calories burned.
-- Track mood or weight updates.
-- Request summaries like "Summarize my day/week/month".
+## 🔁 Workflow Logic
 
----
+1. User activates a **Siri shortcut**, sending a voice input to `POST /webhook/health`.
+2. `Health Agent` receives the input and uses the GPT-4o model to:
+   - Classify the entry type (e.g., nutrition, exercise).
+   - Estimate calories or extract mood.
+   - Format a structured JSON object with a timestamp.
+3. The result is:
+   - Saved to Airtable (`save_healthInfo`).
+   - Queried from Airtable (`read_healthInfo`) for follow-up questions.
+4. `Respond to Siri` replies with a natural-sounding summary (for query-based messages).
 
-## 🧩 Node Structure
+## 🛠️ Setup Instructions
 
-| Node Name            | Type                | Description |
-|----------------------|---------------------|-------------|
-| Webhook              | Trigger             | Receives POST requests at `/health`. |
-| AI Agent             | LangChain Agent     | Custom agent with embedded instructions and example prompts. |
-| OpenAI Chat Model    | OpenAI Chat Model   | Processes natural language with GPT-4o-mini. |
-| save_healthInfo      | Airtable (Create)   | Records health data (intake, calories, exercise, etc.) into Airtable. |
-| read_healthInfo      | Airtable (Search)   | Fetches existing data to generate summary responses. |
-| Respond to Webhook   | Respond             | Sends AI-generated reply to the requester. |
+1. **Webhook Configuration**
+   - Node: `Siri Request`
+   - Path: `/health`
+   - Method: `POST`
+   - Create a Siri Shortcut to send a JSON payload to this endpoint.
 
----
+2. **Airtable Configuration**
+   - Create a base and table with fields:
+     - `Date` (string), `Intake`, `Calories`, `Exercise`, `CaloriesBurned`, `Weight`, `Mood`
+   - Connect with a **Personal Access Token** and assign in `save_healthInfo` and `read_healthInfo` nodes.
 
-## 🛠️ How It Works
+3. **OpenAI Integration**
+   - Use `OpenAI Chat Model` node.
+   - Model: `gpt-4o-mini` or higher.
+   - Assign credentials to both the model and agent nodes.
 
-1. User sends a message like:  
-   - `"I ate a salad"`  
-   - `"I walked 2 miles"`  
-   - `"Summarize my day"`  
+4. **System Prompt Customization (Optional)**
+   - The `Health Agent` has a custom system message.
+   - You can update this to refine how data is parsed or summarized.
 
-2. The message is passed via the **Webhook** node.
+## 📥 Input Example
 
-3. The **AI Agent** processes the prompt with contextual rules and sample responses.
+Say to Siri:
 
-4. The **OpenAI Chat Model** executes the LLM instructions to interpret or summarize.
+> "I had a turkey sandwich with lettuce and tomato, feeling content."
 
-5. Depending on the type of request:
-   - Data is **saved** to Airtable (`save_healthInfo`).
-   - Past data is **read** from Airtable (`read_healthInfo`) and summarized.
+The system will create:
 
-6. The **Respond to Webhook** node sends back a concise reply.
-
----
-
-## 💡 Examples
-
-| User Input                       | AI Response                                   |
-|----------------------------------|-----------------------------------------------|
-| "I ate a Big Mac"                | Recorded eating a Big Mac at 500 calories.    |
-| "I walked 2 miles today"         | Recorded you walked 2 miles and burned 500 cal.|
-| "Summarize my day"              | Your calorie intake is X, burned Y, etc.      |
-| "I’m feeling very tired"         | Mood recorded as very tired.                  |
-
----
-
-## 🔐 Credentials Required
-
-- **OpenAI API Key**: Used by the OpenAI Chat Model node.
-- **Airtable API Token**: Used to access and manipulate data in Airtable.
-
-Ensure both credentials are properly set up in the n8n Credentials Manager:
-- OpenAI → `openAiApi`
-- Airtable → `airtableTokenApi`
-
----
-
-## 📅 Airtable Structure
-
-Airtable table must include the following fields:
-- `Intake` (string)
-- `Calories` (string)
-- `Exercise` (string)
-- `CaloriesBurned` (string)
-- `Weight` (string)
-- `Mood` (string)
-- `Date` (auto-generated)
-
----
-
-## 📲 Webhook Endpoint
-
-- **Path**: `/health`
-- **Method**: `POST`
-- **Payload**: Plain text in query string or header (e.g., `"I drank coffee"`)
-
----
-
-## 🧠 Custom AI Agent Instructions
-
-The agent has been configured with specific domain rules and examples to:
-- Infer calories or mood from statements.
-- Avoid storing empty entries.
-- Summarize daily, weekly, or monthly stats with insights.
-
----
-
-## ✅ Example Curl Command
-
-```bash
-curl -X POST https://your-n8n-domain/webhook/health \
--H "Content-Type: application/json" \
--d '{"query":"I ate two eggs and toast"}'
-```
-
----
-
-## 📎 Notes
-
-- No data will be stored if all fields are empty.
-- The agent logic is maintained using `@n8n/n8n-nodes-langchain.agent`.
-- Requires n8n v1.7+ with LangChain support enabled.
-
----
-
-## 📘 Credits
-
-Developed using **n8n**, **OpenAI**, and **Airtable**
-
----
+```json
+{
+  "timestamp": "2025-06-09T14:23:00Z",
+  "entry_type": "nutrition",
+  "description": "Turkey sandwich with lettuce and tomato",
+  "calories_in": 350,
+  "mood": "content"
+}
